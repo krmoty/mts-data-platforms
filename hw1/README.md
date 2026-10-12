@@ -75,6 +75,3 @@ ssh -N -L 9870:10.0.0.11:9870 ubuntu@vm1
 В [GitHub Actions](https://github.com/krmoty/mts-data-platforms/actions/runs/38273291235)
 на четырех контейнерах Ubuntu внутри одной VM: запись, чтение, три реплики,
 checkpoint и повторный запуск с сохранением файла прошли. На учебных VM в MWS запуск не проводился.
-
-Источники: [условие ДЗ](https://go.teachbase.ru/education/listener/course_player/sessions/1415858/tasks/412727),
-[Apache Hadoop: Cluster Setup](https://hadoop.apache.org/docs/r3.4.1/hadoop-project-dist/hadoop-common/ClusterSetup.html).
