@@ -1,0 +1,68 @@
+name: HDFS cluster check
+on:
+  push:
+    paths: ['hw1/**', '.ci/**', '.github/workflows/hdfs.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  hdfs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shell syntax and lint
+        run: |
+          bash -n hw1/cluster.sh hw1/node.sh
+          shellcheck -x -P hw1 hw1/cluster.sh hw1/node.sh
+      - name: Prepare four Ubuntu nodes
+        run: |
+          mkdir -p .ci/runtime
+          ssh-keygen -t ed25519 -N '' -f .ci/runtime/id_ed25519
+          cd .ci/runtime
+          base=https://archive.apache.org/dist/hadoop/common/hadoop-3.4.1
+          curl -fsSL --retry 3 "$base/hadoop-3.4.1.tar.gz" -o hadoop-3.4.1.tar.gz
+          curl -fsSL --retry 3 "$base/hadoop-3.4.1.tar.gz.sha512" -o hadoop-3.4.1.tar.gz.sha512
+          sha512sum -c hadoop-3.4.1.tar.gz.sha512
+          cd ../..
+          docker build -t hdfs-lab .ci
+          docker network create hdfs-lab
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          for i in 1 2 3 4; do
+            docker run -d --name "hdfs-$i" --hostname "hdfs-$i" --network hdfs-lab hdfs-lab
+            ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "hdfs-$i")
+            printf '%s\n' "$ip" >> .ci/runtime/ips
+            ssh-keyscan -H "$ip" >> ~/.ssh/known_hosts
+          done
+          printf 'Host hdfs-*\n  User student\n  IdentityFile %s/.ci/runtime/id_ed25519\n' "$PWD" >> ~/.ssh/config
+          i=1
+          while read -r ip; do
+            printf 'Host hdfs-%s\n  HostName %s\n' "$i" "$ip" >> ~/.ssh/config
+            i=$((i+1))
+          done < .ci/runtime/ips
+          printf 'SSH_NODES=(hdfs-1 hdfs-2 hdfs-3 hdfs-4)\nINTERNAL_IPS=(%s)\n' \
+            "$(tr '\n' ' ' < .ci/runtime/ips)" > hw1/cluster.conf
+      - name: Deploy and check HDFS
+        run: ./hw1/cluster.sh deploy
+      - name: Redeploy and verify existing data
+        run: |
+          ssh hdfs-1 'HADOOP_CONF_DIR=$HOME/mts-hdfs-hw1/conf $HOME/mts-hdfs-hw1/hadoop-3.4.1/bin/hdfs dfs -cat "/hw1/*"' > .ci/runtime/before.txt
+          ./hw1/cluster.sh deploy
+          ssh hdfs-1 'HADOOP_CONF_DIR=$HOME/mts-hdfs-hw1/conf $HOME/mts-hdfs-hw1/hadoop-3.4.1/bin/hdfs dfs -cat "/hw1/*"' > .ci/runtime/after.txt
+          while IFS= read -r line; do grep -Fx "$line" .ci/runtime/after.txt; done < .ci/runtime/before.txt
+      - name: Collect results and daemon logs
+        if: always()
+        run: |
+          mkdir -p hw1/results
+          for i in 1 2 3 4; do
+            docker cp "hdfs-$i:/home/student/mts-hdfs-hw1/logs" "hw1/results/node-$i" || true
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hdfs-check-results
+          path: hw1/results/
+      - name: Stop lab
+        if: always()
+        run: docker rm -f hdfs-1 hdfs-2 hdfs-3 hdfs-4 || true

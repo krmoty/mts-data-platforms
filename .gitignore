@@ -1,0 +1,4 @@
+hw1/cluster.conf
+hw1/results/
+.ci/runtime/
+.DS_Store

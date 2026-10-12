@@ -1,0 +1,6 @@
+# SSH-адреса или алиасы из ~/.ssh/config. Порядок соответствует INTERNAL_IPS.
+SSH_NODES=(ubuntu@vm1 ubuntu@vm2 ubuntu@vm3 ubuntu@vm4)
+
+# Приватные IPv4-адреса, доступные со ВСЕХ четырёх VM.
+# VM1: NameNode; VM2: DataNode + SecondaryNameNode; VM3, VM4: DataNode.
+INTERNAL_IPS=(10.0.0.11 10.0.0.12 10.0.0.13 10.0.0.14)
