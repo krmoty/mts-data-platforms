@@ -41,7 +41,7 @@ case "${1:-}" in
     remote 0 start
     for i in 1 2 3; do remote "$i" start; done
     remote 1 checkpoint-start
-    "$0" check
+    ./cluster.sh check
     ;;
   check)
     mkdir -p results
