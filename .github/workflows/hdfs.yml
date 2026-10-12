@@ -20,7 +20,7 @@ jobs:
           mkdir -p .ci/runtime
           ssh-keygen -t ed25519 -N '' -f .ci/runtime/id_ed25519
           cd .ci/runtime
-          base=https://archive.apache.org/dist/hadoop/common/hadoop-3.4.1
+          base=https://downloads.apache.org/hadoop/common/hadoop-3.4.1
           curl -fsSL --retry 3 "$base/hadoop-3.4.1.tar.gz" -o hadoop-3.4.1.tar.gz
           curl -fsSL --retry 3 "$base/hadoop-3.4.1.tar.gz.sha512" -o hadoop-3.4.1.tar.gz.sha512
           sha512sum -c hadoop-3.4.1.tar.gz.sha512

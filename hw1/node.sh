@@ -36,9 +36,12 @@ PY
     mkdir -p "$lab" "$HADOOP_LOG_DIR" "$HADOOP_PID_DIR"
     if [[ ! -x $hdfs ]]; then
       archive="hadoop-$version.tar.gz"
-      base="https://archive.apache.org/dist/hadoop/common/hadoop-$version"
+      base="https://downloads.apache.org/hadoop/common/hadoop-$version"
       cd "$lab"
-      curl -fL --retry 3 "$base/$archive" -o "$archive"
+      if ! curl -fL --retry 2 --connect-timeout 20 "$base/$archive" -o "$archive"; then
+        base="https://archive.apache.org/dist/hadoop/common/hadoop-$version"
+        curl -fL --retry 2 --connect-timeout 20 "$base/$archive" -o "$archive"
+      fi
       curl -fL --retry 3 "$base/$archive.sha512" -o "$archive.sha512"
       sha512sum -c "$archive.sha512"
       tar -xzf "$archive"
